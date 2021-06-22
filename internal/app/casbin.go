@@ -15,16 +15,11 @@ func InitCasbin(adapter persist.Adapter) (*casbin.SyncedEnforcer, func(), error)
 		return new(casbin.SyncedEnforcer), nil, nil
 	}
 
-	e, err := casbin.NewSyncedEnforcer(cfg.Model)
+	e, err := casbin.NewSyncedEnforcer(cfg.Model, adapter)
 	if err != nil {
 		return nil, nil, err
 	}
 	e.EnableLog(cfg.Debug)
-
-	err = e.InitWithModelAndAdapter(e.GetModel(), adapter)
-	if err != nil {
-		return nil, nil, err
-	}
 	e.EnableEnforce(cfg.Enable)
 
 	cleanFunc := func() {}
