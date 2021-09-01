@@ -6,15 +6,18 @@
 package app
 
 import (
-	"github.com/LyricTian/gin-admin/v7/internal/app/api"
-	"github.com/LyricTian/gin-admin/v7/internal/app/bll"
-	"github.com/LyricTian/gin-admin/v7/internal/app/model/gormx/model"
-	"github.com/LyricTian/gin-admin/v7/internal/app/module/adapter"
-	"github.com/LyricTian/gin-admin/v7/internal/app/router"
+	"github.com/LyricTian/gin-admin/v8/internal/app/api"
+	"github.com/LyricTian/gin-admin/v8/internal/app/dao/menu"
+	"github.com/LyricTian/gin-admin/v8/internal/app/dao/role"
+	"github.com/LyricTian/gin-admin/v8/internal/app/dao/user"
+	"github.com/LyricTian/gin-admin/v8/internal/app/dao/util"
+	"github.com/LyricTian/gin-admin/v8/internal/app/module/adapter"
+	"github.com/LyricTian/gin-admin/v8/internal/app/router"
+	"github.com/LyricTian/gin-admin/v8/internal/app/service"
 )
 
 import (
-	_ "github.com/LyricTian/gin-admin/v7/internal/app/swagger"
+	_ "github.com/LyricTian/gin-admin/v8/internal/app/swagger"
 )
 
 // Injectors from wire.go:
@@ -30,27 +33,27 @@ func BuildInjector() (*Injector, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	role := &model.Role{
+	roleRepo := &role.RoleRepo{
 		DB: db,
 	}
-	roleMenu := &model.RoleMenu{
+	roleMenuRepo := &role.RoleMenuRepo{
 		DB: db,
 	}
-	menuActionResource := &model.MenuActionResource{
+	menuActionResourceRepo := &menu.MenuActionResourceRepo{
 		DB: db,
 	}
-	user := &model.User{
+	userRepo := &user.UserRepo{
 		DB: db,
 	}
-	userRole := &model.UserRole{
+	userRoleRepo := &user.UserRoleRepo{
 		DB: db,
 	}
 	casbinAdapter := &adapter.CasbinAdapter{
-		RoleModel:         role,
-		RoleMenuModel:     roleMenu,
-		MenuResourceModel: menuActionResource,
-		UserModel:         user,
-		UserRoleModel:     userRole,
+		RoleRepo:         roleRepo,
+		RoleMenuRepo:     roleMenuRepo,
+		MenuResourceRepo: menuActionResourceRepo,
+		UserRepo:         userRepo,
+		UserRoleRepo:     userRoleRepo,
 	}
 	syncedEnforcer, cleanup3, err := InitCasbin(casbinAdapter)
 	if err != nil {
@@ -58,80 +61,71 @@ func BuildInjector() (*Injector, func(), error) {
 		cleanup()
 		return nil, nil, err
 	}
-	demo := &model.Demo{
+	menuRepo := &menu.MenuRepo{
 		DB: db,
 	}
-	bllDemo := &bll.Demo{
-		DemoModel: demo,
-	}
-	apiDemo := &api.Demo{
-		DemoBll: bllDemo,
-	}
-	menu := &model.Menu{
+	menuActionRepo := &menu.MenuActionRepo{
 		DB: db,
 	}
-	menuAction := &model.MenuAction{
+	loginSrv := &service.LoginSrv{
+		Auth:           auther,
+		UserRepo:       userRepo,
+		UserRoleRepo:   userRoleRepo,
+		RoleRepo:       roleRepo,
+		RoleMenuRepo:   roleMenuRepo,
+		MenuRepo:       menuRepo,
+		MenuActionRepo: menuActionRepo,
+	}
+	loginAPI := &api.LoginAPI{
+		LoginSrv: loginSrv,
+	}
+	trans := &util.Trans{
 		DB: db,
 	}
-	login := &bll.Login{
-		Auth:            auther,
-		UserModel:       user,
-		UserRoleModel:   userRole,
-		RoleModel:       role,
-		RoleMenuModel:   roleMenu,
-		MenuModel:       menu,
-		MenuActionModel: menuAction,
+	menuSrv := &service.MenuSrv{
+		TransRepo:              trans,
+		MenuRepo:               menuRepo,
+		MenuActionRepo:         menuActionRepo,
+		MenuActionResourceRepo: menuActionResourceRepo,
 	}
-	apiLogin := &api.Login{
-		LoginBll: login,
+	menuAPI := &api.MenuAPI{
+		MenuSrv: menuSrv,
 	}
-	trans := &model.Trans{
-		DB: db,
+	roleSrv := &service.RoleSrv{
+		Enforcer:               syncedEnforcer,
+		TransRepo:              trans,
+		RoleRepo:               roleRepo,
+		RoleMenuRepo:           roleMenuRepo,
+		UserRepo:               userRepo,
+		MenuActionResourceRepo: menuActionResourceRepo,
 	}
-	bllMenu := &bll.Menu{
-		TransModel:              trans,
-		MenuModel:               menu,
-		MenuActionModel:         menuAction,
-		MenuActionResourceModel: menuActionResource,
+	roleAPI := &api.RoleAPI{
+		RoleSrv: roleSrv,
 	}
-	apiMenu := &api.Menu{
-		MenuBll: bllMenu,
+	userSrv := &service.UserSrv{
+		Enforcer:     syncedEnforcer,
+		TransRepo:    trans,
+		UserRepo:     userRepo,
+		UserRoleRepo: userRoleRepo,
+		RoleRepo:     roleRepo,
 	}
-	bllRole := &bll.Role{
-		Enforcer:      syncedEnforcer,
-		TransModel:    trans,
-		RoleModel:     role,
-		RoleMenuModel: roleMenu,
-		UserModel:     user,
-	}
-	apiRole := &api.Role{
-		RoleBll: bllRole,
-	}
-	bllUser := &bll.User{
-		Enforcer:      syncedEnforcer,
-		TransModel:    trans,
-		UserModel:     user,
-		UserRoleModel: userRole,
-		RoleModel:     role,
-	}
-	apiUser := &api.User{
-		UserBll: bllUser,
+	userAPI := &api.UserAPI{
+		UserSrv: userSrv,
 	}
 	routerRouter := &router.Router{
 		Auth:           auther,
 		CasbinEnforcer: syncedEnforcer,
-		DemoAPI:        apiDemo,
-		LoginAPI:       apiLogin,
-		MenuAPI:        apiMenu,
-		RoleAPI:        apiRole,
-		UserAPI:        apiUser,
+		LoginAPI:       loginAPI,
+		MenuAPI:        menuAPI,
+		RoleAPI:        roleAPI,
+		UserAPI:        userAPI,
 	}
 	engine := InitGinEngine(routerRouter)
 	injector := &Injector{
 		Engine:         engine,
 		Auth:           auther,
 		CasbinEnforcer: syncedEnforcer,
-		MenuBll:        bllMenu,
+		MenuSrv:        menuSrv,
 	}
 	return injector, func() {
 		cleanup3()

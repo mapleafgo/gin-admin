@@ -2,11 +2,10 @@ package api
 
 import "github.com/google/wire"
 
-// APISet 注入api
+// APISet Injection wire
 var APISet = wire.NewSet(
-	DemoSet,
 	LoginSet,
 	MenuSet,
 	RoleSet,
 	UserSet,
-)
+) // end
