@@ -15,15 +15,13 @@ import (
 	"github.com/LyricTian/gin-admin/v8/pkg/util/json"
 )
 
-// 定义上下文中的键
 const (
-	prefix           = "gin-admin"
-	ReqBodyKey       = prefix + "/req-body"
-	ResBodyKey       = prefix + "/res-body"
-	LoggerReqBodyKey = prefix + "/logger-req-body"
+	prefix     = "gin-admin"
+	ReqBodyKey = prefix + "/req-body"
+	ResBodyKey = prefix + "/res-body"
 )
 
-// GetToken 获取用户令牌
+// Get jwt token from header (Authorization: Bearer xxx)
 func GetToken(c *gin.Context) string {
 	var token string
 	auth := c.GetHeader("Authorization")
@@ -34,7 +32,17 @@ func GetToken(c *gin.Context) string {
 	return token
 }
 
-// ParseParamID Parse path id
+// Get body data from context
+func GetBodyData(c *gin.Context) []byte {
+	if v, ok := c.Get(ReqBodyKey); ok {
+		if b, ok := v.([]byte); ok {
+			return b
+		}
+	}
+	return nil
+}
+
+// Param returns the value of the URL param
 func ParseParamID(c *gin.Context, key string) uint64 {
 	val := c.Param(key)
 	id, err := strconv.ParseUint(val, 10, 64)
@@ -44,51 +52,41 @@ func ParseParamID(c *gin.Context, key string) uint64 {
 	return id
 }
 
-// GetBody Get request body
-func GetBody(c *gin.Context) []byte {
-	if v, ok := c.Get(ReqBodyKey); ok {
-		if b, ok := v.([]byte); ok {
-			return b
-		}
-	}
-	return nil
-}
-
-// ParseJSON 解析请求JSON
+// Parse body json data to struct
 func ParseJSON(c *gin.Context, obj interface{}) error {
 	if err := c.ShouldBindJSON(obj); err != nil {
-		return errors.Wrap400Response(err, fmt.Sprintf("解析请求参数发生错误 - %s", err.Error()))
+		return errors.Wrap400Response(err, fmt.Sprintf("Parse request json failed: %s", err.Error()))
 	}
 	return nil
 }
 
-// ParseQuery 解析Query参数
+// Parse query parameter to struct
 func ParseQuery(c *gin.Context, obj interface{}) error {
 	if err := c.ShouldBindQuery(obj); err != nil {
-		return errors.Wrap400Response(err, fmt.Sprintf("解析请求参数发生错误 - %s", err.Error()))
+		return errors.Wrap400Response(err, fmt.Sprintf("Parse request query failed: %s", err.Error()))
 	}
 	return nil
 }
 
-// ParseForm 解析Form请求
+// Parse body form data to struct
 func ParseForm(c *gin.Context, obj interface{}) error {
 	if err := c.ShouldBindWith(obj, binding.Form); err != nil {
-		return errors.Wrap400Response(err, fmt.Sprintf("解析请求参数发生错误 - %s", err.Error()))
+		return errors.Wrap400Response(err, fmt.Sprintf("Parse request form failed: %s", err.Error()))
 	}
 	return nil
 }
 
-// ResOK 响应OK
+// Response success with status ok
 func ResOK(c *gin.Context) {
 	ResSuccess(c, schema.StatusResult{Status: schema.OKStatus})
 }
 
-// ResList 响应列表数据
+// Response data with list object
 func ResList(c *gin.Context, v interface{}) {
 	ResSuccess(c, schema.ListResult{List: v})
 }
 
-// ResPage 响应分页数据
+// Response pagination data object
 func ResPage(c *gin.Context, v interface{}, pr *schema.PaginationResult) {
 	list := schema.ListResult{
 		List:       v,
@@ -97,12 +95,12 @@ func ResPage(c *gin.Context, v interface{}, pr *schema.PaginationResult) {
 	ResSuccess(c, list)
 }
 
-// ResSuccess 响应成功
+// Response data object
 func ResSuccess(c *gin.Context, v interface{}) {
 	ResJSON(c, http.StatusOK, v)
 }
 
-// ResJSON 响应JSON数据
+// Response json data with status code
 func ResJSON(c *gin.Context, status int, v interface{}) {
 	buf, err := json.Marshal(v)
 	if err != nil {
@@ -114,7 +112,7 @@ func ResJSON(c *gin.Context, status int, v interface{}) {
 	c.Abort()
 }
 
-// ResError 响应错误
+// Response error object and parse error status code
 func ResError(c *gin.Context, err error, status ...int) {
 	ctx := c.Request.Context()
 	var res *errors.ResponseError

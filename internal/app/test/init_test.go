@@ -23,7 +23,6 @@ const (
 var engine *gin.Engine
 
 func init() {
-	// 初始化配置文件
 	config.MustLoad(configFile)
 
 	config.C.RunMode = "test"
@@ -45,7 +44,7 @@ func init() {
 
 // ResID 响应唯一标识
 type ResID struct {
-	ID uint64 `json:"id,omitempty"`
+	ID uint64 `json:"id,string"`
 }
 
 func toReader(v interface{}) io.Reader {
