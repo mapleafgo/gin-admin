@@ -2,11 +2,9 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"strings"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
 	"sync"
-
-	"github.com/koding/multiconfig"
 
 	"github.com/LyricTian/gin-admin/v8/pkg/util/json"
 )
@@ -16,31 +14,14 @@ var (
 	once sync.Once
 )
 
-// Load config file (toml/json/yaml)
-func MustLoad(fpaths ...string) {
+func MustLoadViper(fpaths ...string) {
 	once.Do(func() {
-		loaders := []multiconfig.Loader{
-			&multiconfig.TagLoader{},
-			&multiconfig.EnvironmentLoader{},
-		}
-
+		vi := viper.New()
 		for _, fpath := range fpaths {
-			if strings.HasSuffix(fpath, "toml") {
-				loaders = append(loaders, &multiconfig.TOMLLoader{Path: fpath})
-			}
-			if strings.HasSuffix(fpath, "json") {
-				loaders = append(loaders, &multiconfig.JSONLoader{Path: fpath})
-			}
-			if strings.HasSuffix(fpath, "yaml") {
-				loaders = append(loaders, &multiconfig.YAMLLoader{Path: fpath})
-			}
+			vi.SetConfigFile(fpath)
+			_ = vi.ReadInConfig()
 		}
-
-		m := multiconfig.DefaultLoader{
-			Loader:    multiconfig.MultiLoader(loaders...),
-			Validator: multiconfig.MultiValidator(&multiconfig.RequiredValidator{}),
-		}
-		m.MustLoad(C)
+		_ = mapstructure.Decode(vi.AllSettings(), C)
 	})
 }
 
@@ -48,10 +29,10 @@ func PrintWithJSON() {
 	if C.PrintConfig {
 		b, err := json.MarshalIndent(C, "", " ")
 		if err != nil {
-			os.Stdout.WriteString("[CONFIG] JSON marshal error: " + err.Error())
+			fmt.Println("[CONFIG] JSON marshal error: " + err.Error())
 			return
 		}
-		os.Stdout.WriteString(string(b) + "\n")
+		fmt.Println(string(b))
 	}
 }
 
