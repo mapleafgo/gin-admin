@@ -23,7 +23,7 @@ const (
 var engine *gin.Engine
 
 func init() {
-	config.MustLoad(configFile)
+	config.MustLoadViper(configFile)
 
 	config.C.RunMode = "test"
 	config.C.Log.Level = 4

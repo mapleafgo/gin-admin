@@ -53,7 +53,8 @@ func (a *LoginSrv) ResCaptcha(ctx context.Context, w http.ResponseWriter, captch
 
 func (a *LoginSrv) Verify(ctx context.Context, userName, password string) (*schema.User, error) {
 	root := schema.GetRootUser()
-	if userName == root.UserName && root.Password == password {
+	sha1Password := hash.SHA1String(password)
+	if userName == root.UserName && root.Password == sha1Password {
 		return root, nil
 	}
 
@@ -67,7 +68,7 @@ func (a *LoginSrv) Verify(ctx context.Context, userName, password string) (*sche
 	}
 
 	item := result.Data[0]
-	if item.Password != hash.SHA1String(password) {
+	if item.Password != sha1Password {
 		return nil, errors.New400Response("password incorrect")
 	} else if item.Status != 1 {
 		return nil, errors.ErrUserDisable

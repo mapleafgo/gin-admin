@@ -66,7 +66,7 @@ func Init(ctx context.Context, opts ...Option) (func(), error) {
 		opt(&o)
 	}
 
-	config.MustLoad(o.ConfigFile)
+	config.MustLoadViper(o.ConfigFile)
 	if v := o.ModelFile; v != "" {
 		config.C.Casbin.Model = v
 	}

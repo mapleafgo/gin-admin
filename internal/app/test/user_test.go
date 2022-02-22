@@ -49,7 +49,7 @@ func TestUser(t *testing.T) {
 		UserName: uuid.MustUUID().String(),
 		RealName: uuid.MustUUID().String(),
 		Status:   1,
-		Password: hash.MD5String("test"),
+		Password: hash.SHA1String("test"),
 		UserRoles: schema.UserRoles{
 			&schema.UserRole{
 				RoleID: addRoleItemRes.ID,
