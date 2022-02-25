@@ -177,31 +177,20 @@ func InitHTTPServer(ctx context.Context, handler http.Handler) func() {
 }
 
 func Run(ctx context.Context, opts ...Option) error {
-	state := 1
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	signal.Ignore(syscall.SIGHUP)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	cleanFunc, err := Init(ctx, opts...)
 	if err != nil {
 		return err
 	}
 
-EXIT:
-	for {
-		sig := <-sc
-		logger.WithContext(ctx).Infof("Receive signal[%s]", sig.String())
-		switch sig {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			state = 0
-			break EXIT
-		case syscall.SIGHUP:
-		default:
-			break EXIT
-		}
-	}
+	sig := <-sc
+	logger.WithContext(ctx).Infof("Receive signal[%s]", sig.String())
 
 	cleanFunc()
 	logger.WithContext(ctx).Infof("Server exit")
 	time.Sleep(time.Second)
-	os.Exit(state)
+	os.Exit(0)
 	return nil
 }
