@@ -177,7 +177,7 @@ func InitHTTPServer(ctx context.Context, handler http.Handler) func() {
 }
 
 func Run(ctx context.Context, opts ...Option) error {
-	sc := make(chan os.Signal, 1)
+	sc := make(chan os.Signal)
 	signal.Ignore(syscall.SIGHUP)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	cleanFunc, err := Init(ctx, opts...)
