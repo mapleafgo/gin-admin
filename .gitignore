@@ -24,3 +24,5 @@
 # IDE configs
 .idea
 .vscode
+
+wire_gen.go
